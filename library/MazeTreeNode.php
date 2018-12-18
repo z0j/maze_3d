@@ -8,10 +8,13 @@ namespace library;
  */
 class MazeTreeNode
 {
+    /**
+     * @var MazePoint $parent
+     */
     public $parent;
 
     /**
-     * @var MazePoint
+     * @var MazePoint $data
      */
     public $data;
 
