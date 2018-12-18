@@ -2,201 +2,6 @@
 namespace library;
 
 /**
- * 迷宫节点
- * Class MazePoint
- * @package library
- */
-class MazePoint
-{
-    public $x;
-    public $y;
-    public $z;
-
-    public function __construct($arr)
-    {
-        $this->x = $arr[0];
-        $this->y = $arr[1];
-        $this->z = $arr[2];
-    }
-
-    /**
-     * 获取上下左右的所有节点
-     * @return array
-     */
-    private function getNextArr()
-    {
-        return [
-            new MazePoint([$this->x + 1, $this->y, $this->z]),
-            new MazePoint([$this->x, $this->y + 1, $this->z]),
-            new MazePoint([$this->x, $this->y, $this->z + 1]),
-            new MazePoint([$this->x - 1, $this->y, $this->z]),
-            new MazePoint([$this->x, $this->y - 1, $this->z]),
-            new MazePoint([$this->x, $this->y, $this->z - 1]),
-        ];
-    }
-
-    public function findNeighborsPoint()
-    {
-        $arr = $this->getNextArr();
-        // 过滤越界的值 包括"大于最大值 小于最小值"的值
-        $arr = array_filter($arr, function($value){
-            if ($value->x > Maze::$row || $value->y > Maze::$col || $value->z > Maze::$height) {
-                return false;
-            } elseif ($value->x < 0 || $value->y <0 || $value->z < 0) {
-                return false;
-            }
-            return true;
-        });
-        return $arr;
-    }
-
-    /**
-     * 判断传入的节点是否就是当前节点
-     * @param MazePoint $point
-     * @return bool
-     */
-    public function equals(MazePoint $point) {
-        if ($this->x == $point->x && $this->y == $point->y && $this->z == $point->z) {
-            return true;
-        }
-        return false;
-    }
-
-    public function out() {
-        return "({$this->x}{$this->y}{$this->z})";
-    }
-}
-
-/**
- * 迷宫树的节点
- * Class MazeTreeNode
- * @package library
- */
-class MazeTreeNode
-{
-    public $parent;
-
-    /**
-     * @var MazePoint
-     */
-    public $data;
-
-    /**
-     * @var array
-     */
-    public $child = [];
-
-    public function __construct($data, $parent = null)
-    {
-        $this->data = $data;
-        if ($parent !== null) {
-            $this->parent = $parent;
-        }
-    }
-}
-
-/**
- * 迷宫树
- * Class MazeTree
- * @package library
- */
-class MazeTree
-{
-    private $head;
-
-    /**
-     * 设置根节点
-     * @param MazePoint $point
-     */
-    public function setHead(MazePoint $point)
-    {
-        $this->head = new MazeTreeNode($point);
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getHead()
-    {
-        return $this->head->data;
-    }
-
-    /**
-     * 添加新的节点
-     * @param MazePoint|null $parent
-     * @param MazePoint $child
-     */
-    public function addNode($parent, MazePoint $child) {
-        if ($parent === null) {
-            $this->setHead($child);
-        } else {
-            $parentTreeNode = $this->findPoint($parent);
-            if (!empty($parentTreeNode)) {
-                $parentTreeNode->child[] = new MazeTreeNode($child, $parent);
-            }
-        }
-    }
-
-    /**
-     * 查找迷宫通路中是否已经包含这个节点
-     * @param MazePoint $point
-     * @return MazeTreeNode|null
-     */
-    public function findPoint(MazePoint $point)
-    {
-        $data = $this->_recursiveFindPoint($this->head, $point);    // 从根节点搜索节点是否存在
-        return empty($data) ? NULL : $data;
-    }
-
-    /**
-     * 递归查找节点是否存在，存在则返回节点，否则返回null
-     * @param MazeTreeNode|null $point
-     * @param MazePoint $need
-     * @return MazeTreeNode|null
-     */
-    private function _recursiveFindPoint($point, MazePoint $need) {
-        $data = null;
-        if ($point == null) {
-            return $data;
-        }
-        if ($point->data->equals($need)) {
-            $data = &$point;
-        } elseif (!empty($point->child)) {
-            foreach ($point->child as $oneChild) {
-                $data = $this->_recursiveFindPoint($oneChild, $need);
-                if (!empty($data)) {
-                    break;
-                }
-            }
-        }
-        return $data;
-    }
-}
-
-class MazePointInfo
-{
-    /**
-     * @var bool $isVisited
-     */
-    public $isVisited;
-
-    /**
-     * @var MazePoint $data
-     */
-    public $data;
-
-    /**
-     * MazePointInfo constructor.
-     * @param MazePoint $data
-     */
-    public function __construct($data)
-    {
-        $this->isVisited = false;
-        $this->data = $data;
-    }
-}
-
-/**
  *  Class Maze
  * 迷宫
  * 1--从随机选择数组中随机选择一个迷宫格作为起点，如果一开始随机数组没有数据，表示刚开始，取起点
@@ -258,13 +63,14 @@ class Maze
     }
 
     /**
-     * @param int $row
-     * @param int $col
-     * @param int $height
-     * @param array $startPoint
-     * @param array $endPoint
+     * @param int $row 宽
+     * @param int $col 长
+     * @param int $height 高
+     * @param array $startPoint 起点数组，不能越界
+     * @param array $endPoint 终点数组，不能越界
+     * @param bool $randRootNode 是否使用随机的根节点
      */
-    public function init($row, $col, $height, $startPoint, $endPoint)
+    public function init($row, $col, $height, $startPoint, $endPoint, $randRootNode = false)
     {
         /**
          * 初始化长宽高
@@ -286,12 +92,16 @@ class Maze
             }
         }
 
-        // 初始化随机数组
-        $x = rand(0, self::$row);
-        $y = rand(0, self::$col);
-        $z = rand(0, self::$height);
-//        $this->currentNode = $this->PointArray["node_$x$y$z"];        // 更改起始生成点
-        $this->currentNode = $this->PointArray["node_000"];
+        // 初始化随机根节点 或起点作为根节点
+        if ($randRootNode) {
+            $x = rand(0, self::$row);
+            $y = rand(0, self::$col);
+            $z = rand(0, self::$height);
+            $this->currentNode = $this->PointArray["node_$x$y$z"];        // 更改起始生成点
+        } else {
+            $this->currentNode = $this->PointArray["node_000"];
+        }
+
         $this->currentNode->isVisited = true;
         $this->Tree->setHead($this->currentNode->data);     // 根节点
 
@@ -304,7 +114,8 @@ class Maze
      * @param MazePoint $point
      * @return bool
      */
-    public function pointVisitedInPointArray(MazePoint $point) {
+    public function pointVisitedInPointArray(MazePoint $point)
+    {
         $x = $point->x;
         $y = $point->y;
         $z = $point->z;
@@ -357,7 +168,8 @@ class Maze
     /**
      * 获取当前正在访问的节点的邻居节点，要求没有越界、并且没有被访问过
      */
-    public function getAllowedNeighbor() {
+    public function getAllowedNeighbor()
+    {
         // 重置邻居节点数组
         $this->neighborArray = [];
         // 查找当前节点的所有没有越界的合法邻居
@@ -380,29 +192,28 @@ class Maze
      * 否则，从已访问的列表中，随机选取一个作为当前访问的格子
      * @return bool
      */
-    public function iteration() {
+    public function iteration()
+    {
         if (count($this->neighborArray) !== 0) {
             $neighborRand = $this->neighborArray[array_rand($this->neighborArray)];   // 随机取出一个邻居作为正在访问的节点
             $this->Tree->addNode($this->currentNode->data, $neighborRand->data);  // 连接叶子节点和父节点
             $neighborRand->isVisited = true;
-            if (!$this->pointInVisitList($neighborRand->data)) {      // 访问过的节点不用多次进入
-                array_push($this->visitedList, $neighborRand);
-            }
+            array_push($this->visitedList, $neighborRand);
             $this->currentNode = $neighborRand;
         } else {
             if (count($this->visitedList) == 0) {       // 没有了
                 return true;
-            }else {
+            } else {
                 $rand = rand(0, count($this->visitedList)-1);
                 $this->currentNode = $this->visitedList[$rand];       // 随机挑选一个访问过的节点
+                if (!$this->currentNode) {
+                    return true;
+                }
             }
 
-            if (!$this->currentNode) {
-                return true;
-            }
             $this->currentNode->isVisited = true;
             $this->pointInVisitList($this->currentNode->data, true);        // 删除节点，避免多次访问到
-            $this->setVisitPointArray($this->currentNode->data);
+            $this->setVisitPointArray($this->currentNode->data);                    // 设置所有节点表里面的是否已经被访问过
         }
         return false;
     }
@@ -410,11 +221,12 @@ class Maze
     /**
      * 执行
      */
-    public function run() {
-        while($this->currentNode->isVisited) {
+    public function run()
+    {
+        while ($this->currentNode->isVisited) {
             $this->getAllowedNeighbor();
             $break = $this->iteration();
-            if($break) {
+            if ($break) {
                 break;
             }
         }
@@ -424,7 +236,8 @@ class Maze
     /**
      * debug 函数
      */
-    public function getNodeChild() {
+    public function getNodeChild()
+    {
         $arr = [];
         for ($i = 0; $i <= self::$row; $i++) {
             for ($j = 0; $j <= self::$row; $j++) {
@@ -449,20 +262,23 @@ class Maze
     {
         $index = 0;
         $middlePoint = null;
-        while($index < count($start) && $index < count($end)) {
-            if($start[$index]->data->equals($end[$index]->data)) {
-                $middlePoint = array_shift($start);
+        $startTmp = $start; // 不能同时求index的情况下还对这个数组进行操作
+        $endTmp = $end;
+        while ($index < count($startTmp) && $index < count($endTmp)) {
+            if ($startTmp[$index]->data->equals($endTmp[$index]->data)) {    // 如果有共同节点，保留最后一个共同点作为起点和终点的父节点
+                $middlePoint = $startTmp[$index];
+                array_shift($start);
                 array_shift($start);
             }
             $index ++;
         }
 
-        if(!empty($middlePoint)) {
+        if (!empty($middlePoint)) {
             $end[] = $middlePoint;
         }
 
         $end = array_reverse($end);
-        return array_merge($start,$end);
+        return array_merge($start, $end);
     }
 
     /**
@@ -470,22 +286,28 @@ class Maze
      */
     public function escapeRoutes()
     {
-        $arr = [];
-        $arr2 = [];
+        $res = [];
+        $endToRootLine = [];        // 终点到根节点节点数组
+        $startToRootLine = [];      // 起点到根节点数组
         $endPoint = $this->Tree->findPoint($this->endPoint);
-        while ($endPoint->parent !== NULL) {
-            $arr[]  = $endPoint;
+        while ($endPoint->parent !== null) {
+            $endToRootLine[]  = $endPoint;
             $endPoint = $this->Tree->findPoint($endPoint->parent);
         }
 
         $startPoint = $this->Tree->findPoint($this->startPoint);
-        while ($startPoint->parent !== NULL) {
-            $arr2[]  = $startPoint;
-            $startPoint = $this->Tree->findPoint($startPoint->parent);
+        if ($startPoint->parent == null) {  // 起点就根节点
+            $startToRootLine[] = $startPoint;
+        } else {                            // 起点不是根节点
+            while ($startPoint->parent !== null) {
+                $startToRootLine[]  = $startPoint;
+                $startPoint = $this->Tree->findPoint($startPoint->parent);
+            }
         }
 
-        $arr = $this->filterEscapeRoutes($arr2, $arr);  // 合并起点和终点的线路，并删除到根节点的公共部分
-        echo "used:".count($arr)."\tunused:" .(((Maze::$row+1) * (Maze::$col+1) * (Maze::$height+1))-count($arr)).PHP_EOL;
+        $arr = $this->filterEscapeRoutes($startToRootLine, $endToRootLine);  // 合并起点和终点的线路，并删除到根节点的公共部分
+        $res['used'] = count($arr);
+        $res['unused'] = ((Maze::$row+1) * (Maze::$col+1) * (Maze::$height+1))-$res['used'];
 
         $tmp = [];
         /**
@@ -493,12 +315,15 @@ class Maze
          */
         foreach ($arr as $mazeTreeNode) {
             $tmp[] = "(" . $mazeTreeNode->data->x  . $mazeTreeNode->data->y  . $mazeTreeNode->data->z . ")";
+            $res['point'][] = "("
+                . $mazeTreeNode->data->x
+                . "," . $mazeTreeNode->data->y
+                . "," . $mazeTreeNode->data->z . ")";
         }
+        $res['allPoint'] = implode('->', $tmp);
 
-        echo implode('->',$tmp).PHP_EOL;
-
-        $str = "";
         $tmp = [];
+        $tmp2 = [];
         /**
          * @var $mazeTreeNode MazeTreeNode
          */
@@ -507,29 +332,30 @@ class Maze
                 $data = $mazeTreeNode->data;
                 $dataNext = $arr[$key + 1]->data;
                 if ($dataNext->x > $data->x) {
-                   $tmp[] = "右";
+                    $tmp[] = "右";
+                    $tmp2[] = 'right';
                 } elseif ($dataNext->x < $data->x) {
                     $tmp[] = "左";
+                    $tmp2[] = 'left';
                 } elseif ($dataNext->y > $data->y) {
                     $tmp[] = "前";
+                    $tmp2[] = 'front';
                 } elseif ($dataNext->y < $data->y) {
                     $tmp[] = "后";
+                    $tmp2[] = 'back';
                 } elseif ($dataNext->z > $data->z) {
                     $tmp[] = "上";
+                    $tmp2[] = 'up';
                 } elseif ($dataNext->z < $data->z) {
                     $tmp[] = "下";
+                    $tmp2[] = 'down';
                 }
             }
         }
-        echo implode('->',$tmp);
+
+        $res['allPoint1'] = implode('->', $tmp);
+        $res['allPoint2'] = implode('->', $tmp2);
+
+        return $res;
     }
 }
-
-$maze = new Maze();
-$maze->init(10, 10, 10, [0,0,0], [9,9,9]);
-//$maze->init(20, 20, 20, [0,0,0], [19,19,19]);
-//$maze->init(5, 5, 5, [0,0,0], [4,4,4]);
-//$maze->init(3, 3, 3, [0,0,0], [2, 2, 2]);
-$maze->run();
-$maze->escapeRoutes();
-$maze->getNodeChild();
