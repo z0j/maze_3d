@@ -63,8 +63,12 @@ class MazePoint
         return false;
     }
 
+    /**
+     * 输出可视化的结果
+     * @return string
+     */
     public function out()
     {
-        return "({$this->x}{$this->y}{$this->z})";
+        return "({$this->x},{$this->y},{$this->z})";
     }
 }

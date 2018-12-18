@@ -315,10 +315,6 @@ class Maze
          */
         foreach ($arr as $mazeTreeNode) {
             $tmp[] = "(" . $mazeTreeNode->data->x  . $mazeTreeNode->data->y  . $mazeTreeNode->data->z . ")";
-//            $res['point'][] = "("
-//                . $mazeTreeNode->data->x
-//                . "," . $mazeTreeNode->data->y
-//                . "," . $mazeTreeNode->data->z . ")";
         }
         $res['allPoint'] = implode('->', $tmp);
 
@@ -362,117 +358,92 @@ class Maze
     /**
      * 获取三视图
      */
-    public function getThreeView()
+    public function getThreeViewLog($path = null)
     {
-        $path = __DIR__."/../log.log";
+        $result = "";
+        $path = empty($path) ? __DIR__."/../data/maze.log" : $path;
+
+        // 判断前后两个节点中间的墙是不是通的
+        $func = function ($thisPoint = [], $nextPoint = []) {
+            /**
+             * @var MazeTreeNode $point
+             * @var MazeTreeNode $upThisPoint
+             */
+            $point = $this->Tree->findPoint(new MazePoint($thisPoint));       // 本层节点
+            $upThisPoint = $this->Tree->findPoint(new MazePoint($nextPoint));  // 下一层节点
+            // 如果下一层的父节点是该节点，则该节点到下一层的通路
+            if (!empty($point->parent) && $point->parent->equals($upThisPoint->data)) {       // 下穿上
+                return "☐";
+            } elseif (!empty($upThisPoint->parent) && $upThisPoint->parent->equals($point->data)) { // 上穿下
+                return "☐";
+            }
+            return "☒";
+        };
+
+        // 添加底部索引
+        $funcGetIndex = function ($count) {
+            $lineIndex = [" "];
+            for ($l = 0; $l <= $count; $l++) {
+                $lineIndex[] = $l%10;
+            }
+            return implode(' ', $lineIndex);
+        };
 
         // 写入逃生路线
-        file_put_contents($path, '' . var_export($this->escapeRoutes(), true) . PHP_EOL);
+        $result .= var_export($this->escapeRoutes(), true).PHP_EOL;
 
         // 分类别写入三视图
-        file_put_contents($path, '上视图：'.PHP_EOL, FILE_APPEND);
-
+        $result .= '上视图：'.PHP_EOL;
         for ($i = 0; $i <= (Maze::$height - 1); $i ++) {      // z 轴 第9层和第10层之间，所以到8就好了
-            file_put_contents($path, "---------------第 " . ($i+1) . " 面墙-------------------".PHP_EOL, FILE_APPEND);
-            $surface = [];
+            $result .= "---------------第 " . ($i+1) . " 面墙-------------------".PHP_EOL;
+            $surface = [];  // 整面状态
             for ($j = Maze::$col; $j >= 0; $j --) {  // y 轴
                 $line = [];
-                $line[] = $j;
-                $lineIndex = [];
                 for ($k = 0; $k <= Maze::$row; $k ++) { // x轴
-                    /**
-                     * @var MazeTreeNode $point
-                     * @var MazeTreeNode $upThisPoint
-                     */
-                    $point = $this->Tree->findPoint(new MazePoint([$k, $j, $i]));       // 本层节点
-                    $upThisPoint = $this->Tree->findPoint(new MazePoint([$k, $j, $i + 1]));  // 下一层节点
-                    // 如果下一层的父节点是该节点，则该节点到下一层的通路
-                    if (!empty($point->parent) && $point->parent->equals($upThisPoint->data)) {       // 下穿上
-                        $line[] = "☐";
-                    } elseif (!empty($upThisPoint->parent) && $upThisPoint->parent->equals($point->data)) { // 上穿下
-                        $line[] = "☐";
-                    } else {
-                        $line[] = "☒";
-                    }
-                    $lineIndex[] = $k;
+                    $line[] = $func([$k, $j, $i], [$k, $j, $i + 1]);
                 }
                 $surface[] = implode(' ', $line);
             }
-            $surface[] = implode('  ', $lineIndex);
             $str = implode("\r\n", $surface);
-            file_put_contents($path, $str.PHP_EOL, FILE_APPEND);
+            $result .= $str.PHP_EOL;
         }
-        file_put_contents($path, "===========================================================".PHP_EOL, FILE_APPEND);
+        $result .= "===========================================================".PHP_EOL;
 
 
 
-        file_put_contents($path, '正视图：'.PHP_EOL, FILE_APPEND);
-
+        $result .= '正视图：'.PHP_EOL;
         for ($i = 0; $i <= (Maze::$col - 1); $i ++) {      // y轴 第9层和第10层之间，所以到8就好了
-            file_put_contents($path, "---------------第 " . ($i+1) . " 面墙-------------------".PHP_EOL, FILE_APPEND);
+            $result .= "---------------第 " . ($i+1) . " 面墙-------------------".PHP_EOL;
             $surface = [];
             for ($j = Maze::$height; $j >= 0; $j --) {  // z 轴
                 $line = [];
-                $line[] = $j;
-                $lineIndex = [];
                 for ($k = 0; $k <= Maze::$row; $k ++) { // x轴
-                    /**
-                     * @var MazeTreeNode $point
-                     * @var MazeTreeNode $upThisPoint
-                     */
-                    $point = $this->Tree->findPoint(new MazePoint([$k, $i, $j]));       // 本层节点
-                    $upThisPoint = $this->Tree->findPoint(new MazePoint([$k, $i+1, $j]));  // 下一层节点
-                    // 如果下一层的父节点是该节点，则该节点到下一层的通路
-                    if (!empty($point->parent) && $point->parent->equals($upThisPoint->data)) {       // 下穿上
-                        $line[] = "☐";
-                    } elseif (!empty($upThisPoint->parent) && $upThisPoint->parent->equals($point->data)) { // 上穿下
-                        $line[] = "☐";
-                    } else {
-                        $line[] = "☒";
-                    }
-                    $lineIndex[] = $k;
+                    $line[] = $func([$k, $i, $j], [$k, $i+1, $j]);
                 }
                 $surface[] = implode(' ', $line);
             }
-            $surface[] = implode('  ', $lineIndex);
             $str = implode("\r\n", $surface);
-            file_put_contents($path, $str.PHP_EOL, FILE_APPEND);
+            $result .= $str.PHP_EOL;
         }
-        file_put_contents($path, "===========================================================".PHP_EOL, FILE_APPEND);
+        $result .= "===========================================================".PHP_EOL;
 
 
-        file_put_contents($path, '右视图：'.PHP_EOL, FILE_APPEND);
-
+        $result .= '右视图：'.PHP_EOL;
         for ($i = 0; $i <= (Maze::$row - 1); $i ++) {      // x轴 第9层和第10层之间，所以到8就好了
-            file_put_contents($path, "---------------第 " . ($i+1) . " 面墙-------------------".PHP_EOL, FILE_APPEND);
+            $result .= "---------------第 " . ($i+1) . " 面墙-------------------".PHP_EOL;
             $surface = [];
             for ($j = Maze::$height; $j >= 0; $j --) {  // z 轴
                 $line = [];
-                $line[] = $j;
-                $lineIndex = [];
                 for ($k = 0; $k <= Maze::$col; $k ++) { // y轴
-                    /**
-                     * @var MazeTreeNode $point
-                     * @var MazeTreeNode $upThisPoint
-                     */
-                    $point = $this->Tree->findPoint(new MazePoint([$i, $k, $j]));       // 本层节点
-                    $upThisPoint = $this->Tree->findPoint(new MazePoint([$i+1, $k, $j]));  // 下一层节点
-                    // 如果下一层的父节点是该节点，则该节点到下一层的通路
-                    if (!empty($point->parent) && $point->parent->equals($upThisPoint->data)) {       // 下穿上
-                        $line[] = "☐";
-                    } elseif (!empty($upThisPoint->parent) && $upThisPoint->parent->equals($point->data)) { // 上穿下
-                        $line[] = "☐";
-                    } else {
-                        $line[] = "☒";
-                    }
-                    $lineIndex[] = $k;
+                    $line[] = $func([$i, $k, $j], [$i+1, $k, $j]);
                 }
                 $surface[] = implode(' ', $line);
             }
-            $surface[] = implode('  ', $lineIndex);
             $str = implode("\r\n", $surface);
-            file_put_contents($path, $str.PHP_EOL, FILE_APPEND);
+            $result .= $str.PHP_EOL;
         }
-        file_put_contents($path, "===========================================================".PHP_EOL, FILE_APPEND);
+        $result .= "===========================================================".PHP_EOL;
+
+        file_put_contents($path, $result);
     }
 }

@@ -14,9 +14,7 @@ $maze->init(10, 10, 10, [0,0,0], [9,9,9]);
 //$maze->init(5, 5, 5, [0,0,0], [4,4,4]);
 //$maze->init(3, 3, 3, [0,0,0], [2, 2, 2]);
 $maze->run();
-$data = $maze->escapeRoutes();
-//echo json_encode($data, JSON_PRETTY_PRINT);
-$maze->getThreeView();
+$data = $maze->escapeRoutes();  // 获取逃生路线
+$maze->getThreeViewLog(__DIR__."/../data/maze.log");    // 生成三视图
 echo $data['allPoint'].PHP_EOL;
-echo $data['allPoint1'];die;
-//$maze->getNodeChild();
+echo $data['allPoint1'];
