@@ -84,23 +84,12 @@ class Maze
         $this->endPoint = new MazePoint($endPoint);
 
         // 初始化 尚未访问的全部节点
-        for ($i = 0; $i <= self::$row; $i++) {
-            for ($j = 0; $j <= self::$row; $j++) {
-                for ($k = 0; $k <= self::$row; $k++) {
-                    $this->PointArray["node_$i$j$k"] = new MazePointInfo(new MazePoint([$i, $j, $k]));
-                }
-            }
-        }
+        $this->PointArray = MazePointInfo::initInfoArray(self::$row, self::$col, self::$height);
 
         // 初始化随机根节点 或起点作为根节点
-        if ($randRootNode) {
-            $x = rand(0, self::$row);
-            $y = rand(0, self::$col);
-            $z = rand(0, self::$height);
-            $this->currentNode = $this->PointArray["node_$x$y$z"];        // 更改起始生成点
-        } else {
-            $this->currentNode = $this->PointArray["node_000"];
-        }
+        $param = ($randRootNode) ? [rand(0, self::$row), rand(0, self::$col), rand(0, self::$height)] : $startPoint;
+        $index = MazePointInfo::generalIndex($param);
+        $this->currentNode = $this->PointArray[$index];        // 更改起始生成点
 
         $this->currentNode->isVisited = true;
         $this->Tree->setHead($this->currentNode->data);     // 根节点
@@ -116,10 +105,7 @@ class Maze
      */
     public function pointVisitedInPointArray(MazePoint $point)
     {
-        $x = $point->x;
-        $y = $point->y;
-        $z = $point->z;
-        $index = "node_{$x}{$y}{$z}";
+        $index = MazePointInfo::generalIndex($point);
         /**
          * @var MazePointInfo $pointInfo
          */
@@ -129,14 +115,11 @@ class Maze
 
     /**
      * 设置节点已经访问过
-     * @param $point
+     * @param MazePoint $point
      */
-    public function setVisitPointArray($point)
+    public function setVisitPointArray(MazePoint $point)
     {
-        $x = $point->x;
-        $y = $point->y;
-        $z = $point->z;
-        $index = "node_{$x}{$y}{$z}";
+        $index = MazePointInfo::generalIndex($point);
         $this->PointArray[$index]->isVisited = true;
     }
 
