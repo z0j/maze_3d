@@ -355,9 +355,10 @@ class Maze
             $point = $this->Tree->findPoint(new MazePoint($thisPoint));       // 本层节点
             $upThisPoint = $this->Tree->findPoint(new MazePoint($nextPoint));  // 下一层节点
             // 如果下一层的父节点是该节点，则该节点到下一层的通路
-            if (!empty($point->parent) && $point->parent->equals($upThisPoint->data)) {       // 下穿上
+            // 如果下一层的父节点是该节点，则该节点到下一层的通路
+            if (!empty($point->parent) && !empty($upThisPoint) && $point->parent->equals($upThisPoint->data)) {       // 下穿上
                 return "☐";
-            } elseif (!empty($upThisPoint->parent) && $upThisPoint->parent->equals($point->data)) { // 上穿下
+            } elseif (!empty($upThisPoint->parent) && !empty($point->parent) && $upThisPoint->parent->equals($point->data)) { // 上穿下
                 return "☐";
             }
             return "☒";
